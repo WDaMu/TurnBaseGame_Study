@@ -10,7 +10,7 @@ using Unity.Collections;
 using UnityEngine;
 
 public class GridVisual : MonoBehaviour
-{   
+{
     [SerializeField] private Transform gridVisualSinglePrefab; // 可视化网格
     [SerializeField] private LayerMask obstacleLayerMask; // 障碍物层
     private List<GridPosition> obstacleList;
@@ -41,7 +41,11 @@ public class GridVisual : MonoBehaviour
     {
         UnitActionSystem.Instance.OnSelectedActionChanged += UnitActionSystem_onSelectedActionChanged;
         BaseAction.onActionEnd += BaseAction_onActionEnd;
+
+        // Unit选择切换事件
+        UnitActionSystem.Instance.onSelectedUnitChanged += UnitActionSystem_onSelectedUnitChanged;
     }
+
 
     private void UpdateGridVisual()
     {
@@ -71,53 +75,53 @@ public class GridVisual : MonoBehaviour
         // 根据选中的Unit以及选中的Action显示网格
         Unit selectedUnit = UnitActionSystem.Instance.GetSelectedUnit();
         BaseAction selectedAction = UnitActionSystem.Instance.GetSelectedAction();
-        Color actionColor = selectedAction.GetActionColor();
-        Color actionColorLight = new Color(actionColor.r, actionColor.g, actionColor.b, 0.2f);
-        
-        if (selectedUnit == null || selectedAction == null)
+        if (selectedUnit == null)
         {
             return;
         }
-
-        // 显示技能范围
-        int actionRange = selectedAction.GetActionRange();
-        GridPosition unitGridPosition = GridManager.Instance.GetGridPosition(selectedUnit.transform.position);
-
-        if (selectedAction.ToString() == "Shoot" || selectedAction.ToString() == "Attack")
+        if (selectedAction != null)
         {
-            for (int x = - actionRange; x <= actionRange; x++)
+            Color actionColor = selectedAction.GetActionColor();
+            Color actionColorLight = new Color(actionColor.r, actionColor.g, actionColor.b, 0.2f);
+            // 显示技能范围
+            int actionRange = selectedAction.GetActionRange();
+            GridPosition unitGridPosition = GridManager.Instance.GetGridPosition(selectedUnit.transform.position);
+
+            if (selectedAction.ToString() == "Shoot" || selectedAction.ToString() == "Attack")
             {
-                for (int z = - actionRange; z <= actionRange; z++)
+                for (int x = -actionRange; x <= actionRange; x++)
                 {
-                    if (Mathf.Abs(x) + Mathf.Abs(z) > actionRange)
+                    for (int z = -actionRange; z <= actionRange; z++)
                     {
-                        continue;
-                    }
-                    GridPosition itemGridPosition = new GridPosition(x, z) + unitGridPosition;
-                    if (!GridManager.Instance.IsValidPosition(itemGridPosition))
-                    {
-                        continue;
-                    }
-                    gridVisualSinglePrefabArray[itemGridPosition.x, itemGridPosition.z].GetComponent<GridVisualSingle>().Show(actionColorLight);
+                        if (Mathf.Abs(x) + Mathf.Abs(z) > actionRange)
+                        {
+                            continue;
+                        }
+                        GridPosition itemGridPosition = new GridPosition(x, z) + unitGridPosition;
+                        if (!GridManager.Instance.IsValidPosition(itemGridPosition))
+                        {
+                            continue;
+                        }
+                        gridVisualSinglePrefabArray[itemGridPosition.x, itemGridPosition.z].GetComponent<GridVisualSingle>().Show(actionColorLight);
 
+                    }
                 }
-            }  
-        }
-
-        // 显示可行动作网格
-        List<GridPosition> validGrid = GridManager.Instance.GetAvailableGrid(selectedAction, selectedUnit);
-        foreach (GridPosition gridPosition in validGrid)
-        {
-            // 排除有障碍物的网格
-            if (obstacleList.Contains(gridPosition) && selectedAction.ToString() == "Move") // 只有MoveAction才需要排除障碍物
-            {
-                gridVisualSinglePrefabArray[gridPosition.x, gridPosition.z].GetComponent<GridVisualSingle>().Hide();
-                continue;
             }
 
-            gridVisualSinglePrefabArray[gridPosition.x, gridPosition.z].GetComponent<GridVisualSingle>().Show(actionColor);
-        }
+            // 显示可行动作网格
+            List<GridPosition> validGrid = GridManager.Instance.GetAvailableGrid(selectedAction, selectedUnit);
+            foreach (GridPosition gridPosition in validGrid)
+            {
+                // 排除有障碍物的网格
+                if (obstacleList.Contains(gridPosition) && selectedAction.ToString() == "Move") // 只有MoveAction才需要排除障碍物
+                {
+                    gridVisualSinglePrefabArray[gridPosition.x, gridPosition.z].GetComponent<GridVisualSingle>().Hide();
+                    continue;
+                }
 
+                gridVisualSinglePrefabArray[gridPosition.x, gridPosition.z].GetComponent<GridVisualSingle>().Show(actionColor);
+            }
+        }
     }
     private void HideAllGrid()
     {
@@ -132,6 +136,11 @@ public class GridVisual : MonoBehaviour
         UpdateGridVisual();
     }
     private void BaseAction_onActionEnd(object sender, EventArgs e)
+    {
+        UpdateGridVisual();
+    }
+
+    private void UnitActionSystem_onSelectedUnitChanged(object sender, Unit e)
     {
         UpdateGridVisual();
     }

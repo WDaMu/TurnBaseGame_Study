@@ -29,7 +29,11 @@ public class ActionButtonManager : MonoBehaviour
         BaseAction.onActionStart += BaseAction_onActionStart;
         BaseAction.onActionEnd += BaseAction_onActionEnd;
         UnitActionSystem.Instance.onSelectedUnitChanged += UnitActionSystem_OnSelectedUnitChanged;
+
+        TurnSystem.Instance.onTurnChanged += TurnSystem_OnTurnChanged;
     }
+
+
     // 显示选中单元的可用动作的按钮
     private void ShowSelectedUnitActionButton()
     {
@@ -81,15 +85,21 @@ public class ActionButtonManager : MonoBehaviour
     }
     private void UnitActionSystem_OnSelectedUnitChanged(object sender, Unit unit)
     {
+        DeleteAllActionButton();
         if (unit == null)
         {
-            DeleteAllActionButton();
+            return;
         }
         else
         {
-            DeleteAllActionButton();
             ShowSelectedUnitActionButton();
         }
+    }
+
+    // 回合切换
+    private void TurnSystem_OnTurnChanged(object sender, EventArgs e)
+    {
+        DeleteAllActionButton();
     }
 
 }
